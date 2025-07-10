@@ -1,104 +1,151 @@
-# 💡 LumiConnect - Sensor de Luminosidade IoT com Pico W (BITDOGLAB) e MQTT
+
+---
+
+# 🔐 LockEase - Monitoramento e Controle de Acesso com Pico W (BITDOGLAB) via MQTT
 
 ![Linguagem](https://img.shields.io/badge/Linguagem-C-blue.svg)
 ![Plataforma](https://img.shields.io/badge/Plataforma-Raspberry%20Pi%20Pico%20W-purple.svg)
 ![Protocolo](https://img.shields.io/badge/Protocolo-MQTT-orange.svg)
-![Visualização](https://img.shields.io/badge/Visualização-Node--RED-red.svg)
+![Interface](https://img.shields.io/badge/Interface-Web%20Customizada-green.svg)
 
-Este projeto implementa um dispositivo IoT completo utilizando um Raspberry Pi Pico W e um sensor de luminosidade BH1750. O firmware, desenvolvido em C com o Pico SDK, lê a intensidade da luz ambiente e publica os dados em tempo real para um broker MQTT. A visualização dos dados é feita através de um painel de controle dinâmico no Node-RED.
+Este projeto implementa um **sistema de controle de acesso** baseado em **RFID**, usando a placa **Raspberry Pi Pico W (BITDOGLAB)**. O sistema identifica usuários autorizados por RFID, aciona LED/buzzer e envia eventos MQTT para visualização remota. Também simula o **estado da porta** e permite visualização em tempo real em uma **página web personalizada**.
 
-## 📊 Painel de Controle (Resultado Final)
+---
 
-O painel no Node-RED exibe a luminosidade atual em um medidor (gauge) e o histórico dos dados em um gráfico, atualizados em tempo real.
+## 📲 Demonstração da Interface Web
 
-| Baixa Luminosidade | Alta Luminosidade |
-| :---: | :---: |
-| ![Painel com baixa luz](img2.png) | ![Painel com alta luz](img1.png) |
+|   Porta Aberta (Verde)  |  Porta Fechada (Vermelha)  |
+| :---------------------: | :------------------------: |
+| ![Aberta](img_open.png) | ![Fechada](img_closed.png) |
 
-## ✨ Funcionalidades Principais
+---
 
-* **Leitura de Sensor I2C:** Interface com o sensor de luminosidade BH1750.
-* **Conectividade Wi-Fi:** Conexão a uma rede local usando o chip CYW43439 do Pico W.
-* **Protocolo MQTT:** Publicação dos dados de telemetria (QoS 1) para um broker MQTT.
-* **Arquitetura Modular:** O código é organizado em módulos (main, sensor, mqtt) para maior clareza e manutenibilidade.
-* **Sistema Robusto:** Inclui lógica de reconexão automática ao broker MQTT em caso de falha na conexão.
-* **Configuração Centralizada:** Todas as configurações (credenciais, IPs, tópicos) estão em um único arquivo `configura_geral.h`.
-* **Firmware Otimizado:** Configurações da pilha de rede lwIP ajustadas para garantir estabilidade e evitar erros de alocação de memória.
+## ✨ Funcionalidades
 
-## 🏗️ Arquitetura do Sistema
+* ✅ Leitura de tags RFID (MFRC522)
+* 📶 Conectividade Wi-Fi
+* 🔐 Autenticação de acesso com UID
+* 🔊 Buzzer e LEDs como feedback local
+* 🌐 Comunicação via MQTT com publicação de eventos:
 
-O fluxo de dados segue a seguinte arquitetura:
+  * `acesso_autorizado`
+  * `acesso_negado`
+  * `porta_aberta`
+  * `porta_fechada`
+* 📡 Interface web que muda de estado dinamicamente via WebSocket (MQTT)
 
-`[Pico W com Sensor BH1750]` -> `[Wi-Fi]` -> `[Broker Mosquitto MQTT]` -> `[Node-RED]` -> `[Painel Web]`
+---
 
-## 🛠️ Hardware e Software Necessários
+## 🛠️ Hardware e Software
 
 ### Hardware
-* Placa com Raspberry Pi Pico W (neste projeto, foi usada a **BitDogLab**)
-* Sensor de Luminosidade I2C BH1750
+
+* Raspberry Pi Pico W (BitDogLab)
+* Leitor RFID RC522
+* Jumpers, LEDs (vermelho/verde), Buzzer
 
 ### Software
-* [Raspberry Pi Pico C/C++ SDK](https://github.com/raspberrypi/pico-sdk)
-* [Mosquitto](https://mosquitto.org/) (ou qualquer outro broker MQTT)
-* [Node-RED](https://nodered.org/)
-* Um ambiente de compilação C/C++ (GCC para ARM, CMake, etc.)
 
-## 🚀 Como Compilar e Usar
+* [Pico SDK (C/C++)](https://github.com/raspberrypi/pico-sdk)
+* Broker MQTT (ex: Mosquitto)
+* Página HTML/CSS/JS personalizada (usa MQTT via WebSocket)
+* Navegador Web
 
-1.  **Clone o Repositório:**
-    ```bash
-    git clone [URL_DO_SEU_REPOSITÓRIO_AQUI]
-    cd LumiConnect
-    ```
+---
 
-2.  **Configure o Projeto:**
-    * Abra o arquivo `src/configura_geral.h`.
-    * Altere as definições `WIFI_SSID` e `WIFI_PASSWORD` com as credenciais da sua rede Wi-Fi.
-    * Verifique se o `MQTT_BROKER_IP` corresponde ao endereço IP da máquina onde o Mosquitto está rodando.
+## 🧱 Arquitetura
 
-3.  **Configure o Ambiente de Build:**
-    * Certifique-se de que o Pico C/C++ SDK está instalado e que a variável de ambiente `PICO_SDK_PATH` está definida.
+```
+[ Usuário com RFID ] → [ Pico W (RC522) ]
+                         ↓ Wi-Fi
+                  [ Broker MQTT (Mosquitto) ]
+                         ↓ WebSocket
+            [ Interface Web (HTML + JS + MQTT.js) ]
+```
 
-4.  **Compile o Firmware:**
-    ```bash
-    mkdir build
-    cd build
-    cmake ..
-    make
-    ```
+---
 
-5.  **Grave o Firmware:**
-    * Pressione e segure o botão `BOOTSEL` no seu Pico W e conecte-o ao computador.
-    * Ele aparecerá como um dispositivo de armazenamento USB.
-    * Arraste e solte o arquivo `LumiConnect.uf2` (que está na pasta `build`) para dentro do dispositivo. O Pico irá reiniciar e executar o programa.
+## ⚙️ Configurações Necessárias
 
-## 📈 Configuração do Node-RED
+### 📁 `src/configura_geral.h`
 
-1.  Instale e inicie o Node-RED.
-2.  Arraste os nós: **`mqtt in`**, **`gauge`**, e **`chart`**.
-3.  **Configure o nó `mqtt in`:**
-    * **Servidor:** O IP e a porta do seu broker Mosquitto.
-    * **Tópico:** `LumiConnect/dados/luminosidade` (ou use o coringa `+/dados/luminosidade`).
-    * **Saída:** `uma string`.
-4.  Conecte a saída do nó `mqtt in` à entrada dos nós `gauge` e `chart`.
-5.  Clique em **Deploy**.
-6.  Acesse o painel em `http://SEU_IP_NODERED:1880/ui`.
+```c
+#define WIFI_SSID       "SEU_WIFI"
+#define WIFI_PASSWORD   "SENHA_WIFI"
+#define MQTT_BROKER_IP  "192.168.1.100" // IP do seu Mosquitto
+#define DEVICE_ID       "fechadura"
+```
 
-## 📂 Estrutura dos Arquivos
+---
 
-* **main.c:** Orquestra o projeto, inicializa os módulos e contém o loop principal.
-* **bh1750.c / .h:** Módulo do driver para o sensor de luminosidade BH1750.
-* **mqtt_lwip.c / .h:** Módulo que encapsula toda a lógica do cliente MQTT.
-* **configura_geral.h:** Arquivo central para todas as configurações e credenciais.
-* **lwipopts.h:** Configurações avançadas da pilha de rede lwIP para garantir estabilidade.
-* **CMakeLists.txt:** Arquivo de build do projeto.
+### 📄 `mosquitto.conf` (Broker Mosquitto)
 
-## 🔮 Possíveis Melhorias Futuras
+Para ativar WebSocket:
 
-* **Feedback Visual:** Utilizar o LED RGB da placa para indicar o status da conexão (Wi-Fi, MQTT) e publicações.
-* **Receber Comandos:** Expandir o módulo MQTT para receber comandos e atuar em outros componentes da placa.
-* **Modo de Provisionamento:** Criar um modo de configuração onde o Pico cria um Access Point para que as credenciais de Wi-Fi possam ser inseridas através de uma página web, em vez de estarem fixas no código.
+```conf
+listener 1883
+protocol mqtt
 
-## ✍️ Autor
+listener 9001
+protocol websockets
+```
 
-[ASCCJR]
+---
+
+## 🚀 Compilando e Gravando no Pico W
+
+1. **Clone o repositório:**
+
+   ```bash
+   git clone https://github.com/seu-usuario/LockEase.git
+   cd LockEase
+   ```
+
+2. **Configure variáveis e Wi-Fi em `configura_geral.h`**
+
+3. **Compile:**
+
+   ```bash
+   mkdir build
+   cd build
+   cmake ..
+   make
+   ```
+
+4. **Grave no Pico W:**
+
+   * Segure o botão `BOOTSEL` e conecte o cabo USB
+   * Copie o `.uf2` gerado para o dispositivo que aparecer
+
+---
+
+## 🌐 Interface Web (frontend)
+
+Arquivo `index.html`:
+
+```html
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<!-- veja versão completa com animação e botão dinâmico no repositório -->
+```
+
+O frontend se conecta via WebSocket ao Mosquitto e exibe o estado da porta com base nos eventos MQTT publicados.
+
+---
+
+
+## 🔮 Melhorias Futuras
+
+* 📱 Aplicativo mobile com Flutter/PWA
+* 🔒 Suporte a múltiplos usuários
+* 📈 Log de acessos com timestamps
+* 📧 Envio de alertas por email/Telegram
+
+---
+
+## 👨‍💻 Autor
+
+**ASCCJR**
+Projeto desenvolvido na residência tecnológica em sistemas embarcado apoiado pelo Ministério de tecnológia e comunicação(MCTI)
+GitHub: [antonio-collab](https://github.com/antonio-collab)
+
+---
