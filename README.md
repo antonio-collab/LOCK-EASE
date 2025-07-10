@@ -16,7 +16,7 @@ Este projeto implementa um **sistema de controle de acesso** baseado em **RFID**
 
 |   Porta Aberta (Verde)  |  Porta Fechada (Vermelha)  |
 | :---------------------: | :------------------------: |
-| ![Aberta](imagema.png) | ![Fechada](imagem.png) |
+| ![Aberta](/imagea.png) | ![Fechada](/image.png) |
 
 ---
 
