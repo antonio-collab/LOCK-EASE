@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Status do Banheiro</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      text-align: center;
+      padding-top: 60px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+    }
+
+    #icone-banheiro {
+      font-size: 6em;
+      display: inline-block;
+      margin-bottom: 20px;
+      /* Porta fechada inicialmente */
+      transform-origin: center left;
+      transition: transform 1s ease;
+      cursor: default;
+      user-select: none;
+    }
+
+    /* Porta aberta (rotaciona pra fora) */
+    #icone-banheiro.aberto {
+      transform: rotateY(-75deg);
+    }
+
+    #botao-status {
+      font-size: 1.8em;
+      padding: 20px 60px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: default;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+
+    .ocupado {
+      background-color: #f44336;
+    }
+
+    .livre {
+      background-color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <h1>Status do Banheiro 🚻</h1>
+  <div id="icone-banheiro">🚪</div>
+  <br />
+  <button id="botao-status" class="livre">🟢 Banheiro Livre</button>
+
+  <script>
+    const botao = document.getElementById("botao-status");
+    const icone = document.getElementById("icone-banheiro");
+
+    // Conectar no broker MQTT via WebSocket (ajuste o endereço conforme necessário)
+    const client = mqtt.connect('ws://localhost:9001');
+
+    client.on('connect', () => {
+      console.log("✅ Conectado ao broker MQTT");
+      client.subscribe("fechadura/acesso");
+    });
+
+    client.on('message', (topic, message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        const evento = data.evento;
+
+        if (evento === "porta_aberta") {
+          botao.textContent = "🔴 Banheiro Ocupado";
+          botao.className = "ocupado";
+          icone.classList.add("aberto");  // Anima porta aberta
+        } else if (evento === "porta_fechada" || evento === "acesso_autorizado") {
+          botao.textContent = "🟢 Banheiro Livre";
+          botao.className = "livre";
+          icone.classList.remove("aberto");  // Anima porta fechada
+        } else {
+          botao.textContent = "📡 Evento: " + evento;
+        }
+      } catch (err) {
+        console.error("Erro ao interpretar mensagem:", err);
+      }
+    });
+  </script>
+</body>
+</html>
